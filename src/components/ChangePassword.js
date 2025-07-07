@@ -18,6 +18,7 @@ const ChangePassword = () => {
 
   const oldPassword = watch('old_password');
   const newPassword = watch('new_password');
+  const [success, setSuccess] = useState(false);
 
   // Password validation function
   const validatePassword = (password) => {
@@ -50,35 +51,42 @@ const ChangePassword = () => {
     }
 
     setIsLoading(true);
-    const success = await changePassword(data.old_password, data.new_password);
+    const result = await changePassword(data.old_password, data.new_password);
     setIsLoading(false);
-    if (success) {
-      navigate('/dashboard');
+    if (result) {
+      setSuccess(true);
+      setTimeout(() => {
+        setSuccess(false);
+        navigate('/dashboard');
+      }, 1800);
     }
   };
 
+  const handleClose = () => {
+    navigate('/dashboard');
+  };
+
   return (
-    <div className="auth-container">
-      <div className="auth-card">
+    <div className="change-password-modal-ui">
+      <div className="change-password-card">
         <h2>Change Password</h2>
-        <p className="auth-subtitle">Update your password</p>
-        
-        <form onSubmit={handleSubmit(onSubmit)} className="auth-form">
-          <div className="form-group">
+        <p className="change-password-subtitle">Set a new password for your account</p>
+        {success ? (
+          <div className="change-password-success">Password changed successfully!</div>
+        ) : (
+        <form onSubmit={handleSubmit(onSubmit)} className="change-password-form">
+          <div className="change-password-step">
             <label htmlFor="old_password">Current Password</label>
             <input
               type="password"
               id="old_password"
-              {...register('old_password', {
-                required: 'Current password is required'
-              })}
+              {...register('old_password', { required: 'Current password is required' })}
               placeholder="Enter your current password"
               className={errors.old_password ? 'error' : ''}
             />
             {errors.old_password && <span className="error-message">{errors.old_password.message}</span>}
           </div>
-
-          <div className="form-group">
+          <div className="change-password-step">
             <label htmlFor="new_password">New Password</label>
             <input
               type="password"
@@ -97,36 +105,19 @@ const ChangePassword = () => {
               className={errors.new_password ? 'error' : ''}
             />
             {errors.new_password && <span className="error-message">{errors.new_password.message}</span>}
-            
-            {/* Password requirements */}
-            {newPassword && (
-              <div className="password-requirements">
-                <h4>Password Requirements:</h4>
-                <ul>
-                  <li className={newPassword.length >= 8 ? 'valid' : 'invalid'}>
-                    At least 8 characters
-                  </li>
-                  <li className={/[A-Z]/.test(newPassword) ? 'valid' : 'invalid'}>
-                    One uppercase letter
-                  </li>
-                  <li className={/[a-z]/.test(newPassword) ? 'valid' : 'invalid'}>
-                    One lowercase letter
-                  </li>
-                  <li className={/\d/.test(newPassword) ? 'valid' : 'invalid'}>
-                    One number
-                  </li>
-                  <li className={/[!@#$%^&*(),.?":{}|<>]/.test(newPassword) ? 'valid' : 'invalid'}>
-                    One special character
-                  </li>
-                  <li className={newPassword !== oldPassword ? 'valid' : 'invalid'}>
-                    Different from current password
-                  </li>
-                </ul>
-              </div>
-            )}
+            <div className="change-password-requirements">
+              <span>Password must include:</span>
+              <ul>
+                <li className={newPassword && newPassword.length >= 8 ? 'valid' : 'invalid'}>8+ characters</li>
+                <li className={newPassword && /[A-Z]/.test(newPassword) ? 'valid' : 'invalid'}>Uppercase letter</li>
+                <li className={newPassword && /[a-z]/.test(newPassword) ? 'valid' : 'invalid'}>Lowercase letter</li>
+                <li className={newPassword && /\d/.test(newPassword) ? 'valid' : 'invalid'}>Number</li>
+                <li className={newPassword && /[!@#$%^&*(),.?":{}|<>]/.test(newPassword) ? 'valid' : 'invalid'}>Special character</li>
+                <li className={newPassword && newPassword !== oldPassword ? 'valid' : 'invalid'}>Different from current password</li>
+              </ul>
+            </div>
           </div>
-
-          <div className="form-group">
+          <div className="change-password-step">
             <label htmlFor="confirm_password">Confirm New Password</label>
             <input
               type="password"
@@ -140,24 +131,12 @@ const ChangePassword = () => {
             />
             {errors.confirm_password && <span className="error-message">{errors.confirm_password.message}</span>}
           </div>
-
-          <button 
-            type="submit" 
-            className="auth-button" 
-            disabled={isLoading}
-          >
-            {isLoading ? 'Changing Password...' : 'Change Password'}
+          <button type="submit" className="change-password-button" disabled={isLoading}>
+            {isLoading ? 'Changing...' : 'Change Password'}
           </button>
         </form>
-
-        <div className="auth-footer">
-          <button 
-            onClick={() => navigate('/dashboard')} 
-            className="auth-link-button"
-          >
-            Back to Dashboard
-          </button>
-        </div>
+        )}
+        <button onClick={handleClose} className="close-modal-button" style={{marginTop: 18}}>Close</button>
       </div>
     </div>
   );

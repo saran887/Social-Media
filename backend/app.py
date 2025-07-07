@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -7,6 +7,8 @@ import os
 from datetime import timedelta
 from pymongo import MongoClient
 from pymongo.errors import DuplicateKeyError
+import uuid
+from pathlib import Path
 
 app = Flask(__name__)
 
@@ -191,8 +193,15 @@ def change_password():
         if not is_valid_password:
             return jsonify({'error': password_message}), 400
         
-        # Update password
+        # Prevent reuse of last 3 passwords
         new_hashed_password = generate_password_hash(new_password)
+        for prev_hash in user.password_history:
+            if check_password_hash(prev_hash, new_password):
+                return jsonify({'error': 'You cannot reuse any of your last 3 passwords.'}), 400
+        if check_password_hash(user.hashed_password, new_password):
+            return jsonify({'error': 'New password must be different from old password'}), 400
+        
+        # Update password
         user.update_password(new_hashed_password)
         
         return jsonify({'message': 'Password changed successfully'}), 200
@@ -254,15 +263,33 @@ def get_profile():
 def get_posts():
     try:
         posts = Post.find_all()
-        return jsonify([{
-            'id': post.id,
-            'title': post.title,
-            'content': post.content,
-            'user_id': post.user_id,
-            'created_at': post.created_at.isoformat() if post.created_at else None
-        } for post in posts]), 200
+        posts_with_user_info = []
+        
+        for post in posts:
+            # Get user information for each post
+            user = User.find_by_id(post.user_id)
+            user_info = {
+                'id': user.id,
+                'username': user.username,
+                'full_name': user.full_name
+            } if user else None
+            
+            posts_with_user_info.append({
+                'id': post.id,
+                'title': post.title,
+                'content': post.content,
+                'user_id': post.user_id,
+                'user': user_info,
+                'created_at': post.created_at.isoformat() if post.created_at else None,
+                'image_url': getattr(post, 'image_url', None),
+                'visibility': getattr(post, 'visibility', 'public')
+            })
+        
+        return jsonify(posts_with_user_info), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+UPLOAD_FOLDER = r'D:/nutz/socialmedia/upload'
 
 @app.route('/posts', methods=['POST'])
 @jwt_required()
@@ -270,28 +297,86 @@ def create_post():
     try:
         current_user_email = get_jwt_identity()
         user = User.find_by_email(current_user_email)
-        
-        data = request.get_json()
-        
-        if not all(key in data for key in ['title', 'content']):
+
+        if request.content_type and request.content_type.startswith('multipart/form-data'):
+            title = request.form.get('title')
+            content = request.form.get('content')
+            visibility = request.form.get('visibility', 'public')
+            image = request.files.get('image')
+        else:
+            data = request.get_json()
+            title = data.get('title')
+            content = data.get('content')
+            visibility = data.get('visibility', 'public')
+            image = None
+
+        if not title or not content:
             return jsonify({'error': 'Title and content required'}), 400
-        
+
+        image_url = None
+        if image:
+            # Always save to D:/nutz/socialmedia/upload
+            upload_folder = UPLOAD_FOLDER
+            os.makedirs(upload_folder, exist_ok=True)
+            ext = image.filename.rsplit('.', 1)[-1].lower()
+            filename = f"{uuid.uuid4().hex}.{ext}"
+            image_path = os.path.join(upload_folder, filename)
+            image.save(image_path)
+            image_url = f"/upload/{filename}"
+
         new_post = Post(
-            title=data['title'],
-            content=data['content'],
-            user_id=user.id
+            title=title,
+            content=content,
+            user_id=user.id,
+            image_url=image_url,
+            visibility=visibility
         )
-        
         new_post.save()
-        
+
         return jsonify({
             'id': new_post.id,
             'title': new_post.title,
             'content': new_post.content,
             'user_id': new_post.user_id,
-            'created_at': new_post.created_at.isoformat() if new_post.created_at else None
+            'user': {
+                'id': user.id,
+                'username': user.username,
+                'full_name': user.full_name
+            },
+            'created_at': new_post.created_at.isoformat() if new_post.created_at else None,
+            'image_url': new_post.image_url,
+            'visibility': new_post.visibility
         }), 201
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
         
+@app.route('/upload/<filename>')
+def uploaded_file(filename):
+    upload_folder = UPLOAD_FOLDER
+    file_path = os.path.join(upload_folder, filename)
+    if not os.path.exists(upload_folder):
+        return jsonify({'error': 'Upload folder does not exist', 'path': upload_folder}), 404
+    if not os.path.exists(file_path):
+        return jsonify({'error': 'File not found', 'path': file_path}), 404
+    return send_from_directory(upload_folder, filename)
+
+@app.route('/posts/<post_id>', methods=['DELETE', 'OPTIONS'])
+@jwt_required()
+def delete_post(post_id):
+    if request.method == 'OPTIONS':
+        return '', 200
+    try:
+        post = Post.find_by_id(post_id)
+        if not post:
+            return jsonify({'error': 'Post not found'}), 404
+        # Optionally, check if the current user is the owner
+        current_user_email = get_jwt_identity()
+        user = User.find_by_email(current_user_email)
+        if post.user_id != user.id:
+            return jsonify({'error': 'Unauthorized'}), 403
+        post.delete()
+        return jsonify({'message': 'Post deleted'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -301,3 +386,5 @@ def root():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
+
+

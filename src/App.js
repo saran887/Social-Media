@@ -4,8 +4,8 @@ import { Toaster } from 'react-hot-toast';
 import Login from './components/Login';
 import Register from './components/Register';
 import Dashboard from './components/Dashboard';
-import ChangePassword from './components/ChangePassword';
 import ForgotPassword from './components/ForgotPassword';
+import ChangePassword from './components/ChangePassword';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import './App.css';
 
@@ -45,14 +45,7 @@ function App() {
                 </PublicRoute>
               } 
             />
-            <Route 
-              path="/forgot-password" 
-              element={
-                <PublicRoute>
-                  <ForgotPassword />
-                </PublicRoute>
-              } 
-            />
+            
             <Route 
               path="/dashboard" 
               element={

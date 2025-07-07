@@ -8,12 +8,14 @@ db = client['social_media']
 posts_collection = db['posts']
 
 class Post:
-    def __init__(self, title, content, user_id, created_at=None, updated_at=None):
+    def __init__(self, title, content, user_id, created_at=None, updated_at=None, image_url=None, visibility='public'):
         self.title = title
         self.content = content
         self.user_id = user_id
         self.created_at = created_at or datetime.utcnow()
         self.updated_at = updated_at or datetime.utcnow()
+        self.image_url = image_url
+        self.visibility = visibility
     
     def to_dict(self):
         return {
@@ -21,7 +23,9 @@ class Post:
             'content': self.content,
             'user_id': self.user_id,
             'created_at': self.created_at,
-            'updated_at': self.updated_at
+            'updated_at': self.updated_at,
+            'image_url': self.image_url,
+            'visibility': self.visibility
         }
     
     @staticmethod
@@ -31,7 +35,9 @@ class Post:
             content=data.get('content'),
             user_id=data.get('user_id'),
             created_at=data.get('created_at'),
-            updated_at=data.get('updated_at')
+            updated_at=data.get('updated_at'),
+            image_url=data.get('image_url'),
+            visibility=data.get('visibility', 'public')
         )
     
     def save(self):

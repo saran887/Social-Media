@@ -3,7 +3,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #eebb5e 0%, #764ba2 100%);
   padding: 20px;
 }
 
@@ -224,6 +224,130 @@
   background: #e74c3c;
 }
 
+/* Change Password Modal UI */
+.change-password-modal-ui {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100%;
+}
+.change-password-card {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 4px 24px rgba(24,119,242,0.10), 0 1.5px 6px rgba(0,0,0,0.04);
+  padding: 32px 28px 24px 28px;
+  min-width: 320px;
+  max-width: 380px;
+  width: 100%;
+  position: relative;
+  animation: fadeInCard 0.2s;
+}
+@keyframes fadeInCard {
+  from { opacity: 0; transform: translateY(-16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.change-password-card h2 {
+  margin: 0 0 6px 0;
+  font-size: 24px;
+  color: #1877f2;
+  font-weight: 700;
+}
+.change-password-subtitle {
+  color: #666;
+  font-size: 15px;
+  margin-bottom: 18px;
+}
+.change-password-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.change-password-step {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.change-password-step label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #444;
+}
+.change-password-step input {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #ccd0d5;
+  background-color: #f9f9f9;
+  font-size: 15px;
+  transition: all 0.2s;
+}
+.change-password-step input:focus {
+  border-color: #1877f2;
+  background-color: white;
+  outline: none;
+}
+.change-password-requirements {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #888;
+}
+.change-password-requirements ul {
+  margin: 4px 0 0 0;
+  padding-left: 18px;
+}
+.change-password-requirements li {
+  margin-bottom: 2px;
+  list-style: disc;
+  color: #888;
+  font-size: 13px;
+  transition: color 0.2s;
+}
+.change-password-requirements li.valid {
+  color: #28a745;
+  font-weight: 500;
+}
+.change-password-requirements li.invalid {
+  color: #e74c3c;
+}
+.change-password-success {
+  background: #e6f9ed;
+  color: #218838;
+  border-radius: 6px;
+  padding: 16px 0;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.change-password-button {
+  background: #1877f2;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  align-self: flex-end;
+  margin-top: 8px;
+}
+.change-password-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.close-modal-button {
+  margin-top: 12px;
+  background: #f0f2f5;
+  color: #1877f2;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.close-modal-button:hover {
+  background: #e4ecfb;
+}
 @media (max-width: 480px) {
   .auth-card {
     padding: 30px 20px;
@@ -242,5 +366,10 @@
   .auth-button {
     padding: 12px 20px;
     font-size: 14px;
+  }
+  .change-password-card {
+    padding: 18px 6px 14px 6px;
+    min-width: 0;
+    max-width: 98vw;
   }
 } 
