@@ -4,7 +4,7 @@ from flask_jwt_extended import JWTManager, create_access_token, jwt_required, ge
 from werkzeug.security import generate_password_hash, check_password_hash
 import re
 import os
-from datetime import timedelta
+from datetime import timedelta, datetime
 from pymongo import MongoClient
 from pymongo.errors import DuplicateKeyError
 import uuid
@@ -69,11 +69,14 @@ def validate_password(password):
 
 # Email validation function
 def validate_email(email):
-    """Validate email format"""
+ 
     pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     if re.match(pattern, email):
         return True, "Email is valid"
     return False, "Invalid email format"
+
+
+
 
 # Authentication routes
 @app.route('/auth/register', methods=['POST'])
@@ -109,11 +112,13 @@ def register():
         
         # Create new user
         hashed_password = generate_password_hash(password)
+        bio = data.get('bio', '')  # Optional bio field
         new_user = User(
             email=email,
             username=username,
             hashed_password=hashed_password,
-            full_name=full_name
+            full_name=full_name,
+            bio=bio
         )
         
         new_user.save()
@@ -155,7 +160,8 @@ def login():
                 'id': user.id,
                 'email': user.email,
                 'username': user.username,
-                'full_name': user.full_name
+                'full_name': user.full_name,
+                'bio': user.bio
             }
         }), 200
         
@@ -251,6 +257,43 @@ def get_profile():
             'email': user.email,
             'username': user.username,
             'full_name': user.full_name,
+            'bio': user.bio,
+            'created_at': user.created_at.isoformat() if user.created_at else None
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/auth/profile', methods=['PUT'])
+@jwt_required()
+def update_profile():
+    try:
+        current_user_email = get_jwt_identity()
+        user = User.find_by_email(current_user_email)
+        
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        
+        data = request.get_json()
+        
+        # Update allowed fields
+        if 'full_name' in data:
+            user.full_name = data['full_name']
+        if 'bio' in data:
+            user.bio = data['bio']
+        
+        # Update the timestamp
+        user.updated_at = datetime.utcnow()
+        
+        # Save the updated user
+        user.save()
+        
+        return jsonify({
+            'id': user.id,
+            'email': user.email,
+            'username': user.username,
+            'full_name': user.full_name,
+            'bio': user.bio,
             'created_at': user.created_at.isoformat() if user.created_at else None
         }), 200
         

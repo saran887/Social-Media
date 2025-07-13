@@ -16,12 +16,41 @@ const Dashboard = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showCreatePost, setShowCreatePost] = useState(false);
+  const [showEditProfile, setShowEditProfile] = useState(false);
+  const [userProfile, setUserProfile] = useState(null);
+  const [editProfileData, setEditProfileData] = useState({ full_name: '', bio: '' });
   const navigate = useNavigate();
   const BACKEND_URL = "http://localhost:5000";
 
   useEffect(() => {
     fetchPosts();
   }, []);
+
+  const fetchUserProfile = async () => {
+    try {
+      const response = await axios.get('/auth/profile');
+      setUserProfile(response.data);
+    } catch (error) {
+      console.error('Failed to fetch profile:', error);
+    }
+  };
+
+  const handleEditProfile = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await axios.put('/auth/profile', editProfileData);
+      setUserProfile(response.data);
+      setShowEditProfile(false);
+      toast.success('Profile updated successfully!');
+    } catch (error) {
+      toast.error('Failed to update profile');
+    }
+  };
+
+  const openProfile = () => {
+    fetchUserProfile();
+    setShowProfile(true);
+  };
 
   const fetchPosts = async () => {
     try {
@@ -97,40 +126,48 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="dashboard">
-      <header className="dashboard-header">
+    <div className="dashboard-root">
+      <header className="dashboard-header fixed-header">
         <div className="header-content">
-          <h1>Social Media Platform</h1>
-          <div className="user-info">
-            <span>Welcome, {user?.full_name || user?.username}!</span>
-            <div className="header-actions">
-              <button onClick={() => setShowCreatePost(true)} className="post-header-button">Post</button>
-              {user && (
-                <button onClick={() => setShowProfile(true)} className="profile-header-button">Profile</button>
-              )}
-              <button onClick={logout} className="logout-button">Logout</button>
-            </div>
+          <span className="logo-title">Nutz</span>
+          <div className="header-actions">
+            <button onClick={() => setShowCreatePost(true)} className="post-header-button">Post</button>
+            {user && (
+              <button onClick={openProfile} className="profile-header-button">Profile</button>
+            )}
+            <button onClick={logout} className="logout-button">Logout</button>
           </div>
         </div>
       </header>
-
+      {/* Floating Action Button for Post (mobile) */}
+      <button className="fab-post" onClick={() => setShowCreatePost(true)} title="Create Post">＋</button>
       {/* Profile Modal */}
       {showProfile && user && (
         <div className="profile-modal">
           <section className="profile-section">
             <div className="profile-header">
               <div className="profile-avatar">
-                <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user.full_name || user.username)}&background=1877f2&color=fff&size=96`} alt="Avatar" />
+                <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(userProfile?.full_name || user.full_name || user.username)}&background=1877f2&color=fff&size=96`} alt="Avatar" />
               </div>
               <div className="profile-details">
-                <h2>{user.full_name || user.username}</h2>
+                <h2>{userProfile?.full_name || user.full_name || user.username}</h2>
                 <p className="profile-username">@{user.username}</p>
                 <p className="profile-email">{user.email}</p>
-                <p className="profile-date">Joined: {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}</p>
-                <p className="profile-bio">Bio: <span className="profile-bio-placeholder">This is your bio. (Edit coming soon)</span></p>
+                <p className="profile-date">Joined: {userProfile?.created_at ? new Date(userProfile.created_at).toLocaleDateString() : 'N/A'}</p>
+                <p className="profile-bio">
+                  Bio: <span className={userProfile?.bio ? 'profile-bio-text' : 'profile-bio-placeholder'}>
+                    {userProfile?.bio || 'Tell us about yourself...'}
+                  </span>
+                </p>
                 <div className="profile-actions">
                   <button onClick={() => navigate('/change-password')} className="change-password-button">Change Password</button>
-                  <button className="edit-profile-button" disabled>Edit Profile</button>
+                  <button onClick={() => {
+                    setEditProfileData({ 
+                      full_name: userProfile?.full_name || user.full_name || '', 
+                      bio: userProfile?.bio || '' 
+                    });
+                    setShowEditProfile(true);
+                  }} className="edit-profile-button">Edit Profile</button>
                 </div>
               </div>
             </div>
@@ -160,6 +197,44 @@ const Dashboard = () => {
         </div>
       )}
 
+      {/* Edit Profile Modal */}
+      {showEditProfile && (
+        <div className="edit-profile-modal">
+          <section className="edit-profile-section">
+            <h2>Edit Profile</h2>
+            <form onSubmit={handleEditProfile} className="edit-profile-form">
+              <div className="form-group">
+                <label htmlFor="full_name">Full Name</label>
+                <input
+                  type="text"
+                  id="full_name"
+                  value={editProfileData.full_name}
+                  onChange={(e) => setEditProfileData({ ...editProfileData, full_name: e.target.value })}
+                  placeholder="Enter your full name"
+                  maxLength={100}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="bio">Bio</label>
+                <textarea
+                  id="bio"
+                  value={editProfileData.bio}
+                  onChange={(e) => setEditProfileData({ ...editProfileData, bio: e.target.value })}
+                  placeholder="Tell us about yourself..."
+                  rows={4}
+                  maxLength={500}
+                />
+                <small className="char-count">{editProfileData.bio.length}/500 characters</small>
+              </div>
+              <div className="edit-profile-actions">
+                <button type="submit" className="save-profile-button">Save Changes</button>
+                <button type="button" onClick={() => setShowEditProfile(false)} className="cancel-profile-button">Cancel</button>
+              </div>
+            </form>
+          </section>
+        </div>
+      )}
       {/* Create Post Modal */}
       {showCreatePost && (
         <div className="create-post-modal">
@@ -241,14 +316,13 @@ const Dashboard = () => {
           </section>
         </div>
       )}
-
       {/* Only show the feed if not creating a post */}
       {!showCreatePost && (
         <main className="dashboard-main">
           <div className="dashboard-container">
             {/* Posts Section */}
             <section className="posts-section">
-              <h2>Recent Posts</h2>
+              <h2 className="feed-title">Feed</h2>
               {isLoading ? (
                 <div className="loading">Loading posts...</div>
               ) : posts.length === 0 ? (
@@ -257,6 +331,7 @@ const Dashboard = () => {
                 <div className="posts-list">
                   {posts.map((post) => (
                     <article key={post.id} className="post-card">
+                      {/* User Info Row */}
                       <div className="post-user-row">
                         <img
                           src={post.user?.username ? `https://ui-avatars.com/api/?name=${encodeURIComponent(post.user.full_name || post.user.username)}&background=1877f2&color=fff&size=40` : undefined}
@@ -264,11 +339,16 @@ const Dashboard = () => {
                           className="post-avatar"
                         />
                         <div className="post-user-meta">
-                          <span className="post-username">{post.user?.username || 'Unknown'}</span>
+                          <span className="post-username">{post.user?.full_name || post.user?.username || 'Unknown'}</span>
+                          <span className="post-user-handle">@{post.user?.username || 'unknown'}</span>
                           <span className="post-date">{formatDate(post.created_at)}</span>
                         </div>
                         <span className={`post-visibility ${post.visibility}`}>{post.visibility === 'private' ? '🔒' : '🌍'}</span>
+                        {user && post.user_id === user.id && (
+                          <button className="delete-post-btn" onClick={() => handleDeletePost(post.id)} title="Delete Post">🗑️</button>
+                        )}
                       </div>
+                      {/* Post Image */}
                       {post.image_url && (
                         <div className="post-image-container">
                           <img
@@ -278,12 +358,16 @@ const Dashboard = () => {
                           />
                         </div>
                       )}
+                      {/* Post Content */}
                       <div className="post-content">
                         <p>{post.content}</p>
                       </div>
-                      {user && post.user_id === user.id && (
-                        <button className="delete-post-btn" onClick={() => handleDeletePost(post.id)} title="Delete Post">🗑️</button>
-                      )}
+                      {/* Social Actions Row */}
+                      <div className="post-actions-row">
+                        <button className="action-btn" title="Like" disabled>👍 Like</button>
+                        <button className="action-btn" title="Comment" disabled>💬 Comment</button>
+                        <button className="action-btn" title="Share" disabled>↗️ Share</button>
+                      </div>
                     </article>
                   ))}
                 </div>

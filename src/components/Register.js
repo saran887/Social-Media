@@ -118,6 +118,23 @@ const Register = () => {
           </div>
 
           <div className="form-group">
+            <label htmlFor="bio">Bio (Optional)</label>
+            <textarea
+              id="bio"
+              {...register('bio', {
+                maxLength: {
+                  value: 500,
+                  message: 'Bio must be less than 500 characters'
+                }
+              })}
+              placeholder="Tell us about yourself..."
+              rows={3}
+              className={errors.bio ? 'error' : ''}
+            />
+            {errors.bio && <span className="error-message">{errors.bio.message}</span>}
+          </div>
+
+          <div className="form-group">
             <label htmlFor="password">Password</label>
             <input
               type="password"

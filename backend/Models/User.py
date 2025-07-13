@@ -8,11 +8,12 @@ db = client['social_media']
 users_collection = db['users']
 
 class User:
-    def __init__(self, email, username, hashed_password, full_name=None, is_active=True, created_at=None, updated_at=None, password_history=None):
+    def __init__(self, email, username, hashed_password, full_name=None, bio=None, is_active=True, created_at=None, updated_at=None, password_history=None):
         self.email = email
         self.username = username
         self.hashed_password = hashed_password
         self.full_name = full_name
+        self.bio = bio
         self.is_active = is_active
         self.created_at = created_at or datetime.utcnow()
         self.updated_at = updated_at or datetime.utcnow()
@@ -24,6 +25,7 @@ class User:
             'username': self.username,
             'hashed_password': self.hashed_password,
             'full_name': self.full_name,
+            'bio': self.bio,
             'is_active': self.is_active,
             'created_at': self.created_at,
             'updated_at': self.updated_at,
@@ -37,6 +39,7 @@ class User:
             username=data.get('username'),
             hashed_password=data.get('hashed_password'),
             full_name=data.get('full_name'),
+            bio=data.get('bio'),
             is_active=data.get('is_active', True),
             created_at=data.get('created_at'),
             updated_at=data.get('updated_at'),
